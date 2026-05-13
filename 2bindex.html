@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>2B Communication | Final Fixed Master</title>
+    <title>2B Communication | Final Fixed Download</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -44,7 +44,7 @@
     <div id="admin-panel" class="hidden space-y-4 mb-6">
         <div class="ui-card p-4 border-l-4 border-indigo-500">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-sm font-bold text-indigo-300 uppercase">ইউজার ও ডাটা কন্ট্রোল</h2>
+                <h2 class="text-sm font-bold text-indigo-300 uppercase">এডমিন কন্ট্রোল</h2>
                 <div class="bg-indigo-600 px-3 py-1 rounded text-[10px] font-bold">মোট ডাটা: <span id="total-count">0</span></div>
             </div>
             
@@ -53,21 +53,21 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
                 <input type="text" id="new-user" placeholder="ইউজার আইডি">
                 <input type="text" id="new-pass" placeholder="পাসওয়ার্ড">
-                <button onclick="createUser()" class="bg-indigo-600 rounded-lg text-xs font-bold py-2">ইউজার সেট/আপডেট</button>
+                <button onclick="createUser()" class="bg-indigo-600 rounded-lg text-xs font-bold py-2">ইউজার সেট করুন</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-700 pt-4 mb-4">
                 <div class="bg-slate-800/50 p-2 rounded border border-dashed border-slate-600 text-center">
                     <p class="text-[9px] mb-1 text-slate-400 font-bold italic">ID Card (id.png)</p>
-                    <input type="file" onchange="loadImg(this, 'id')" class="text-[10px] w-full">
+                    <input type="file" id="id-input" onchange="loadImg(this, 'id')" class="text-[10px] w-full">
                 </div>
                 <div class="bg-slate-800/50 p-2 rounded border border-dashed border-slate-600 text-center">
                     <p class="text-[9px] mb-1 text-slate-400 font-bold italic">Plate (plate.png)</p>
-                    <input type="file" onchange="loadImg(this, 'plate')" class="text-[10px] w-full">
+                    <input type="file" id="plate-input" onchange="loadImg(this, 'plate')" class="text-[10px] w-full">
                 </div>
             </div>
 
-            <button onclick="deleteAllData()" class="w-full bg-red-900/30 text-red-400 border border-red-800 py-1 text-[10px] font-bold rounded">সব ডাটা একবারে মুছুন</button>
+            <button onclick="deleteAllData()" class="w-full bg-red-900/30 text-red-400 border border-red-800 py-1 text-[10px] font-bold rounded">সব ডাটা মুছুন</button>
         </div>
     </div>
 
@@ -87,13 +87,13 @@
     </div>
 
     <div id="admin-btns" class="hidden grid grid-cols-2 gap-4 mb-6">
-        <button onclick="buildZip()" class="bg-slate-700 py-3 rounded-lg font-bold border border-slate-600">📂 SVG জিপ ডাউনলোড</button>
-        <button onclick="window.print()" class="bg-blue-600 py-3 rounded-lg font-bold shadow-lg">🖨️ প্রিন্ট ভিউ (10x7)</button>
+        <button onclick="buildZip()" class="bg-slate-700 py-3 rounded-lg font-bold border border-slate-600 hover:bg-slate-600">📂 SVG জিপ ডাউনলোড</button>
+        <button onclick="window.print()" class="bg-blue-600 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-500">🖨️ প্রিন্ট ভিউ</button>
     </div>
 
-    <div class="flex justify-between items-center mb-2 px-1">
-        <span class="text-xs text-slate-400">এন্ট্রিকৃত তালিকা:</span>
-        <span id="personal-count" class="text-xs text-indigo-400 font-bold"></span>
+    <div class="flex justify-between items-center mb-2 px-1 text-xs text-slate-400">
+        <span>এন্ট্রিকৃত তালিকা:</span>
+        <span id="personal-count" class="text-indigo-400 font-bold"></span>
     </div>
     <div id="list" class="space-y-1 max-h-[400px] overflow-y-auto pr-2"></div>
 </div>
@@ -105,14 +105,20 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     let entries = []; let usersData = {}; let currentUser = sessionStorage.getItem('user_2b');
-    let idImg = ""; let plateImg = "";
+    let idImgBase64 = ""; let plateImgBase64 = "";
 
     function loadImg(input, type) {
         if (input.files && input.files[0]) {
             const rd = new FileReader();
             rd.onload = (e) => { 
-                if(type === 'id') idImg = e.target.result; 
-                else { plateImg = e.target.result; renderPrint(); }
+                if(type === 'id') {
+                    idImgBase64 = e.target.result;
+                    alert("ID কার্ড টেমপ্লেট লোড হয়েছে!");
+                } else {
+                    plateImgBase64 = e.target.result;
+                    alert("Plate টেমপ্লেট লোড হয়েছে!");
+                    renderPrint();
+                }
             };
             rd.readAsDataURL(input.files[0]);
         }
@@ -122,7 +128,7 @@
         database.ref('users').on('value', (s) => {
             usersData = s.val() || { "admin": { pass: "forhad786" } };
             if (currentUser && usersData[currentUser]) {
-                if(usersData[currentUser].status === 'blocked') { alert("আপনার আইডি ব্লক করা হয়েছে!"); logout(); return; }
+                if(usersData[currentUser].status === 'blocked') { alert("ব্লকড!"); logout(); return; }
                 document.getElementById('main-content').classList.remove('hidden');
                 document.getElementById('user-display').innerText = `ইউজার: ${currentUser.toUpperCase()}`;
                 if(currentUser === 'admin') {
@@ -133,8 +139,7 @@
             } else {
                 const id = prompt("ID:").toLowerCase().trim(); const p = prompt("Pass:");
                 if(id && usersData[id] && usersData[id].pass === p) {
-                    if(usersData[id].status === 'blocked') alert("ব্লকড আইডি!");
-                    else { sessionStorage.setItem('user_2b', id); location.reload(); }
+                    sessionStorage.setItem('user_2b', id); location.reload();
                 } else { alert("ভুল তথ্য!"); location.reload(); }
             }
         });
@@ -159,7 +164,7 @@
                     <span class="text-[10px] font-bold uppercase ${isB?'text-red-500':'text-indigo-300'}">${u} (${counts[u]||0})</span>
                     <div class="flex gap-2">
                         <button onclick="updateStatus('${u}', '${isB?'active':'blocked'}')" class="text-[9px] px-2 py-1 bg-slate-700 rounded">${isB?'আনব্লক':'ব্লক'}</button>
-                        <button onclick="delUser('${u}')" class="text-[9px] text-red-500 font-bold px-1">×</button>
+                        <button onclick="delUser('${u}')" class="text-[9px] text-red-500 px-1 font-bold">×</button>
                     </div>
                 </div>`;
             });
@@ -175,8 +180,8 @@
         if(u && p) { database.ref('users/'+u).update({pass:p, status:'active'}); alert("ইউজার আপডেট হয়েছে!"); }
     }
     function updateStatus(u, s) { if(u!=='admin') database.ref('users/'+u).update({status:s}); }
-    function delUser(u) { if(u!=='admin' && confirm("ইউজারটি কি ডিলিট করবেন?")) database.ref('users/'+u).remove(); }
-    function deleteAllData() { if(confirm("সব ডাটা কি চিরতরে মুছবেন?")) database.ref('entries').remove(); }
+    function delUser(u) { if(u!=='admin' && confirm("মুছবেন?")) database.ref('users/'+u).remove(); }
+    function deleteAllData() { if(confirm("সব ডাটা মুছবেন?")) database.ref('entries').remove(); }
 
     function saveData() {
         const data = { owner: document.getElementById('owner').value, parent: document.getElementById('parent').value, hld: document.getElementById('hld').value, ward: document.getElementById('ward').value, road: document.getElementById('road').value, user: currentUser };
@@ -217,7 +222,7 @@
             </div>`).join('');
     }
 
-    // SVG ও প্রিন্ট লজিক (বাম এলাইনমেন্ট ফিক্সড)
+    // SVG ও ফিক্সড ডাউনলোড লজিক
     function getSvgText(text, x, y, maxWidth, fontSize, isBold=false, color="black") {
         let estW = text.length * (fontSize * 0.52);
         let sX = estW > maxWidth ? (maxWidth / estW) : 1;
@@ -225,31 +230,52 @@
     }
 
     async function buildZip() {
-        if(!idImg) return alert("id.png আপলোড করুন");
+        if(!idImgBase64) return alert("দয়া করে প্রথমে ID Card (id.png) টেমপ্লেটটি আপলোড করুন।");
+        if(entries.length === 0) return alert("ডাউনলোড করার মতো কোনো ডাটা নেই।");
+
         const zip = new JSZip();
-        for(let d of entries) {
-            const txt = `মালিক: ${d.owner}\nপিতা: ${d.parent}\nহোল্ডিং: ${d.hld}\nওয়ার্ড: ${d.ward}\nঠিকানা: ${d.road}`;
-            const qrR = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(txt)}`);
-            const qB64 = await new Promise(ok => { const r = new FileReader(); r.onloadend = () => ok(r.result); r.readAsDataURL(qrR.blob()); });
-            const svg = `<?xml version="1.0" encoding="UTF-8"?><svg width="85.5mm" height="54mm" viewBox="0 0 85.5 54" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                <image xlink:href="${idImg}" x="0" y="0" width="85.5" height="54" preserveAspectRatio="none"/>
-                ${getSvgText(d.owner, 25.5, 20.5, 36, 3.2, true)}
-                ${getSvgText(d.parent, 25.5, 25.5, 36, 3.2)}
-                ${getSvgText(d.hld, 25.5, 30.5, 36, 3.2, true, "white")}
-                ${getSvgText(d.ward, 25.5, 35.5, 36, 3.2)}
-                ${getSvgText(d.road, 25.5, 40.5, 36, 2.8)}
-                <image xlink:href="${qB64}" x="63.5" y="28" height="19" width="19"/>
-            </svg>`;
-            zip.file(`${d.hld.replace(/\//g,'_')}.svg`, svg);
+        const svgFolder = zip.folder("SVGs");
+
+        try {
+            for(let d of entries) {
+                const qrText = `মালিক: ${d.owner}\nপিতা: ${d.parent}\nহোল্ডিং: ${d.hld}\nওয়ার্ড: ${d.ward}\nঠিকানা: ${d.road}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrText)}`;
+                
+                // QR Code fetch and convert to Base64
+                const qrRes = await fetch(qrUrl);
+                const qrBlob = await qrRes.blob();
+                const qrB64 = await new Promise(ok => { const r = new FileReader(); r.onloadend = () => ok(r.result); r.readAsDataURL(qrBlob); });
+
+                const svg = `<?xml version="1.0" encoding="UTF-8"?><svg width="85.5mm" height="54mm" viewBox="0 0 85.5 54" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <image xlink:href="${idImgBase64}" x="0" y="0" width="85.5" height="54" preserveAspectRatio="none"/>
+                    ${getSvgText(d.owner, 25.5, 20.5, 36, 3.2, true)}
+                    ${getSvgText(d.parent, 25.5, 25.5, 36, 3.2)}
+                    ${getSvgText(d.hld, 25.5, 30.5, 36, 3.2, true, "white")}
+                    ${getSvgText(d.ward, 25.5, 35.5, 36, 3.2)}
+                    ${getSvgText(d.road, 25.5, 40.5, 36, 2.8)}
+                    <image xlink:href="${qrB64}" x="63.5" y="28" height="19" width="19"/>
+                </svg>`;
+                
+                svgFolder.file(`${d.hld.replace(/[\/\\?%*:|"<>]/g, '-')}.svg`, svg);
+            }
+
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = "2B_Communication_Files.zip";
+                link.click();
+                alert("ডাউনলোড শুরু হয়েছে!");
+            });
+        } catch (e) {
+            alert("ডাউনলোড করতে সমস্যা হচ্ছে। ইন্টারনেট চেক করুন।");
         }
-        zip.generateAsync({type:"blob"}).then(c => { const a = document.createElement('a'); a.href = URL.createObjectURL(c); a.download = "IDs_2B.zip"; a.click(); });
     }
 
     function renderPrint() {
-        if(!plateImg) return;
+        if(!plateImgBase64) return;
         document.getElementById('print-zone').innerHTML = entries.map(e => {
             const txt = `মালিক: ${e.owner}\nপিতা: ${e.parent}\nহোল্ডিং: ${e.hld}\nওয়ার্ড: ${e.ward}\nঠিকানা: ${e.road}`;
-            return `<div class="page"><img src="${plateImg}" class="bg-template">
+            return `<div class="page"><img src="${plateImgBase64}" class="bg-template">
                 <div class="plate-info p-owner"><span class="auto-fit">${e.owner}</span></div>
                 <div class="plate-info p-parent"><span class="auto-fit">${e.parent}</span></div>
                 <div class="plate-info p-hld"><span class="auto-fit">${e.hld}</span></div>
@@ -260,6 +286,7 @@
         }).join('');
         setTimeout(() => { document.querySelectorAll('.plate-info').forEach(b => { const s = b.querySelector('.auto-fit'); const sc = Math.min(1, b.offsetWidth / s.offsetWidth); s.style.transform = `scale(${sc}, 1)`; }); }, 500);
     }
+    
     function logout() { sessionStorage.removeItem('user_2b'); location.reload(); }
 </script>
 </body>
